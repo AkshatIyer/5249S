@@ -11,10 +11,10 @@ motor liftMotor = motor(PORT8);
 motor rampMotor = motor(PORT4);
 motor intakeLMotor = motor(PORT3,true);
 motor intakeRMotor = motor(PORT9);
-
+gyro turnGyro = gyro(Brain.ThreeWirePort.A);
 // A global instance of vex::competition
 competition Competition;
- 
+
 float sensitivity = 1;
 //All robot controls
 class rLib {
@@ -78,23 +78,41 @@ class rLib {
       liftMotor.stop(brakeType::hold);
     }
     //An Autonomous method that turns a bot based on the specified degrees, velocity, and direction of the robot.
+    // static void turn(double velocity, double degrees, bool dirRight){
+    //   //Sets the velocity of all motors to the specified velocity above
+    //   backLeft.setVelocity(velocity, velocityUnits::pct);
+    //   frontLeft.setVelocity(velocity, velocityUnits::pct);
+    //   backRight.setVelocity(velocity, velocityUnits::pct);
+    //   frontRight.setVelocity(velocity, velocityUnits::pct);
+    //   //Degrees multiplied by digits of PI in order to obtain degree calculations.
+    //   degrees = degrees * 3.141592653589793238462643383279;
+    //   //Determines the direction the bot will travel in.
+    //   directionType backDir = dirRight ? directionType::fwd : directionType::rev;
+    //   directionType frontDir = dirRight ? directionType::rev : directionType::fwd;
+
+    //   //Turns the bot using the specified parameters and calculations done above.
+    //   backLeft.rotateFor(backDir, degrees, rotationUnits::deg, false);
+    //   backRight.rotateFor(backDir, degrees, rotationUnits::deg, false);
+    //   frontLeft.rotateFor(frontDir, degrees, rotationUnits::deg, false);
+    //   frontRight.rotateFor(frontDir, degrees, rotationUnits::deg, true);
+    // }
     static void turn(double velocity, double degrees, bool dirRight){
-      //Sets the velocity of all motors to the specified velocity above
       backLeft.setVelocity(velocity, velocityUnits::pct);
       frontLeft.setVelocity(velocity, velocityUnits::pct);
       backRight.setVelocity(velocity, velocityUnits::pct);
       frontRight.setVelocity(velocity, velocityUnits::pct);
-      //Degrees multiplied by digits of PI in order to obtain degree calculations.
-      degrees = degrees * 3.141592653589793238462643383279;
-      //Determines the direction the bot will travel in.
+      //
       directionType backDir = dirRight ? directionType::fwd : directionType::rev;
       directionType frontDir = dirRight ? directionType::rev : directionType::fwd;
-
-      //Turns the bot using the specified parameters and calculations done above.
-      backLeft.rotateFor(backDir, degrees, rotationUnits::deg, false);
-      backRight.rotateFor(backDir, degrees, rotationUnits::deg, false);
-      frontLeft.rotateFor(frontDir, degrees, rotationUnits::deg, false);
-      frontRight.rotateFor(frontDir, degrees, rotationUnits::deg, true);
+      //
+      while(turnGyro.angle() < degrees){
+        backLeft.spin(backDir,velocity,velocityUnits::pct);
+        backRight.spin(backDir,velocity,velocityUnits::pct);
+        frontLeft.spin(frontDir,velocity,velocityUnits::pct);
+        frontRight.spin(frontDir,velocity,velocityUnits::pct);
+      }
+      stopDrive();
+      turnGyro.resetAngle();
     }
     //An Autonomous method that drives a bot based on the specified velocity, direction, and inches wanted to travel.
     static void drive(double velocity, directionType dir, int inches){
@@ -183,6 +201,7 @@ void pre_auton(void) {
   rampMotor.resetRotation();
   intakeLMotor.resetRotation();
   intakeRMotor.resetRotation();
+  turnGyro.resetAngle();
 }
  
 /*---------------------------------------------------------------------------*/
