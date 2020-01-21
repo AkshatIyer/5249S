@@ -1,7 +1,34 @@
+// To complete the VEXcode V5 Text project upgrade process, please follow the
+// steps below.
+// 
+// 1. You can use the Robot Configuration window to recreate your V5 devices
+//   - including any motors, sensors, 3-wire devices, and controllers.
+// 
+// 2. All previous code located in main.cpp has now been commented out. You
+//   will need to migrate this code to the new "int main" structure created
+//   below and keep in mind any new device names you may have set from the
+//   Robot Configuration window. 
+// 
+// If you would like to go back to your original project, a complete backup
+// of your original (pre-upgraded) project was created in a backup folder
+// inside of this project's folder.
+
+// ---- START VEXCODE CONFIGURED DEVICES ----
+// ---- END VEXCODE CONFIGURED DEVICES ----
+
 #include "vex.h"
+
 using namespace vex;
- 
-brain Brain;
+
+
+
+#include "vex.h"
+
+// ---- START VEXCODE CONFIGURED DEVICES ----
+// Robot Configuration:
+// [Name]               [Type]        [Port(s)]
+// ---- END VEXCODE CONFIGURED DEVICES ----
+using namespace vex;
 controller Controller = controller();
 motor backLeft = motor(PORT11);
 motor backRight = motor(PORT1);
@@ -11,7 +38,7 @@ motor liftMotor = motor(PORT8);
 motor rampMotor = motor(PORT4);
 motor intakeLMotor = motor(PORT3,true);
 motor intakeRMotor = motor(PORT9);
-gyro turnGyro = gyro(Brain.ThreeWirePort.A);
+inertial sensor = inertial(PORT7);
 // A global instance of vex::competition
 competition Competition;
 
@@ -53,10 +80,9 @@ class rLib {
     }
     static void stack(){
       liftRamp();
-      raiseArms();
       stopIntake();
       startReverseIntake();
-      //drive(25,directionType::rev,3);
+      drive(25,directionType::rev,3);
       stopIntake();
     }
     //Deploys the arms for the first time.
@@ -105,14 +131,14 @@ class rLib {
       directionType backDir = dirRight ? directionType::fwd : directionType::rev;
       directionType frontDir = dirRight ? directionType::rev : directionType::fwd;
       //
-      while(turnGyro.angle() < degrees){
-        backLeft.spin(backDir,velocity,velocityUnits::pct);
-        backRight.spin(backDir,velocity,velocityUnits::pct);
-        frontLeft.spin(frontDir,velocity,velocityUnits::pct);
-        frontRight.spin(frontDir,velocity,velocityUnits::pct);
-      }
+      backLeft.spin(backDir,velocity,velocityUnits::pct);
+      backRight.spin(backDir,velocity,velocityUnits::pct);
+      frontLeft.spin(frontDir,velocity,velocityUnits::pct);
+      frontRight.spin(frontDir,velocity,velocityUnits::pct);
+
+      waitUntil(sensor.heading() >= degrees);
       stopDrive();
-      turnGyro.resetAngle();
+      sensor.setHeading(0,rotationUnits::deg);
     }
     //An Autonomous method that drives a bot based on the specified velocity, direction, and inches wanted to travel.
     static void drive(double velocity, directionType dir, int inches){
@@ -164,7 +190,9 @@ class rLib {
     }
     //Rotates the Lift Down.
     static void startLiftDown() {
-      liftMotor.spin(directionType::rev, 100*sensitivity, percentUnits::pct);
+      if(liftMotor.rotation(rotationUnits::deg) > 0) { //bottom limit
+        liftMotor.spin(directionType::rev, 100*sensitivity, percentUnits::pct);
+      }
     }
     //Pushes the ramp to a 90 degree angle to the ground.
     static void startRampUp() {
@@ -201,7 +229,9 @@ void pre_auton(void) {
   rampMotor.resetRotation();
   intakeLMotor.resetRotation();
   intakeRMotor.resetRotation();
-  turnGyro.resetAngle();
+  sensor.calibrate();
+  waitUntil(!sensor.isCalibrating());
+  sensor.setHeading(0,degrees);
 }
  
 /*---------------------------------------------------------------------------*/
@@ -272,6 +302,8 @@ void usercontrol(void) {
 // Main will set up the competition functions and callbacks.
 //
 int main() {
+  //initializing something
+
   //Set up callbacks for autonomous and driver control periods.
   Competition.autonomous( autonomous );
   Competition.drivercontrol( usercontrol );
