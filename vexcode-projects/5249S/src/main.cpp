@@ -34,11 +34,11 @@ motor backLeft = motor(PORT11);
 motor backRight = motor(PORT1);
 motor frontLeft = motor(PORT20, true);
 motor frontRight = motor(PORT10,true);
-motor liftMotor = motor(PORT8);
+motor liftMotor = motor(PORT7);
 motor rampMotor = motor(PORT4);
 motor intakeLMotor = motor(PORT3,true);
-motor intakeRMotor = motor(PORT9);
-inertial sensor = inertial(PORT7);
+motor intakeRMotor = motor(PORT8);
+inertial sensor = inertial(PORT6);
 // A global instance of vex::competition
 competition Competition;
 
@@ -48,15 +48,15 @@ class rLib {
   public:
     //Called during auton. Opens the robot to functioning mode.
     static void deployBot(){
-      startIntake();
+      // startIntake();
       raiseArms();
       stopIntake();
-      startReverseIntake();
-      dropArms();
-      task::sleep(50);
-      liftRamp();
-      dropRamp();
-      stopIntake();
+      // startReverseIntake();
+      // dropArms();
+      // task::sleep(50);
+      // liftRamp();
+      // dropRamp();
+      // stopIntake();
     }
     //Macro to lift the ramp to a perpendicular position to the ground.
     static void liftRamp(){
@@ -93,7 +93,7 @@ class rLib {
     static void raiseArms(){
       liftMotor.setVelocity(100, percentUnits::pct);
       //1080 = old val
-      liftMotor.spinFor(550, rotationUnits::deg);
+      liftMotor.spinFor(1000, rotationUnits::deg);
     }
     //To hold the ramp in its current position.
     static void stopRamp(){
@@ -176,7 +176,7 @@ class rLib {
       intakeLMotor.spin(directionType::rev, 100*sensitivity, percentUnits::pct);
       intakeRMotor.spin(directionType::rev, 100*sensitivity, percentUnits::pct);
     }
-    static void startReverseIntakeFor(float seconds){
+    static void startReverseIntakeFor(float seconds) {
       intakeLMotor.setReversed(true);
       intakeRMotor.setReversed(true);
       intakeLMotor.setVelocity(50, percentUnits::pct);
@@ -208,6 +208,29 @@ class rLib {
         sensitivity = .5;
       else
         sensitivity = 1;
+    }
+
+    //I'm trying again
+    
+    static void customDrive(double inches, directionType d) {
+      double Kp = 0;
+      double Ki = 0;
+      double Kd = 0;
+      double error = inches;
+      double previousError = 0;
+      double P;
+      double I;
+      double D;
+      double totalError = 0;
+      double power;
+      while(true) {
+        totalError += error;
+        P = Kp * error;
+        D = (error - previousError) * kDeviceTypeMotorSensor;
+        I = totalError * Ki;
+        power = P + I + D;
+
+      }
     }
 };
  
@@ -244,6 +267,7 @@ void pre_auton(void) {
 /*  You must modify the code to add your own robot specific commands here.   */
 /*---------------------------------------------------------------------------*/
 int auton = 2;
+bool redSide = false;
 void autonomous(void) {
   if(auton == 0){
     //One point reverse with preload
@@ -252,31 +276,44 @@ void autonomous(void) {
     rLib::deployBot();
   }else if(auton == 1){
     //4 point auton. blue = true, red = false
-    rLib::deployBot(); //deploys the ramp and arms.
-    rLib::startIntake(); //starts rotating the intake.
+    // rLib::deployBot(); //deploys the ramp and arms.
+    // rLib::startIntake(); //starts rotating the intake.
 
     //drive forward and intake cubes.
     rLib::drive(35, directionType::fwd, 40);
     //turn around and drive to the score zone.
     rLib::stopIntake();
-    rLib::turn(25, 160, true);
-    rLib::drive(40, directionType::fwd, 32);
+    rLib::turn(25, 140, true);
+    rLib::drive(40, directionType::fwd, 28);
     //make the sensitivity more precise.
     rLib::toggleSensitive();
     //stack algorithm, may replace with the stack() method.
-    rLib::stack();
+    // rLib::stack();
     // rLib::stopIntake();
     // rLib::liftRamp();
     // rLib::startReverseIntakeFor(1);
     //rLib::drive(10, directionType::fwd, 2);
     //rLib::dropRamp();
-    //rLib::startReverseIntake();
-    rLib::drive(20, directionType::rev, 30);
-  }else if(auton == 1){
+    // rLib::startReverseIntake();
+    // rLib::drive(20, directionType::rev, 30);
+  }else if(auton == 2){
     rLib::deployBot();
     task::sleep(1000);
     // rLib::stack();
+  }else if(auton == 3){ //Akshat's attempt at a 6 point auton
+    rLib::deployBot(); //deploys the ramp and arms.
+    rLib::startIntake();
+    rLib::drive(35, directionType::fwd, 40);
+    rLib::turn(25,20,!redSide);
+    rLib::drive(35,directionType::fwd,10);
+    //turn around and drive to the score zone.
+    rLib::stopIntake();
+    rLib::turn(25, 160, redSide);
+    rLib::drive(40, directionType::fwd, 28);
+    //make the sensitivity more precise.
+    rLib::toggleSensitive();
   }
+  
 }
 /*---------------------------------------------------------------------------*/
 /*                                                                           */
