@@ -48,52 +48,58 @@ class rLib {
     //Called during auton. Opens the robot to functioning mode.
     static void deployBot(){
       // startIntake();
-      raiseArms();
+      raiseArms(850);
       stopArms();
-      dropArms();
-      // startReverseIntake();
-      // dropArms();
+      // startOuttake();
+      
       // task::sleep(50);
-      // liftRamp();
-      // dropRamp();
+      liftRamp(600);
+      dropRamp(600);
+      dropArms(350);
+      startOuttake();
+      task::sleep(50);
+      dropArms(425);
+      stopIntake();
       // stopIntake();
     }
     //Macro to lift the ramp to a perpendicular position to the ground.
-    static void liftRamp(){
+    static void liftRamp(int amt){
       rampMotor.setVelocity(100 * sensitivity, percentUnits::pct);
-      rampMotor.spinFor(1620, rotationUnits::deg);
+      //fully extended is 1620
+      rampMotor.spinFor(amt, rotationUnits::deg);
       task::sleep(1000);
     }
     //Macro to drop the ramp to a resting angle on the bot.
-    static void dropRamp(){
+    static void dropRamp(int amt){
       rampMotor.setReversed(true);
       rampMotor.setVelocity(100 * sensitivity, percentUnits::pct);
-      rampMotor.spinFor(1620, rotationUnits::deg);
+      // full way is 1620
+      rampMotor.spinFor(amt, rotationUnits::deg);
       rampMotor.setReversed(false);
     }
     //Macro to lower the arms to a resting position on the bot.
-    static void dropArms(){
+    static void dropArms(int amt){
       liftMotor.setReversed(true);
       //1080 = old val
-      liftMotor.spinFor(1200, rotationUnits::deg);
+      liftMotor.spinFor(amt, rotationUnits::deg);
       liftMotor.setReversed(false);
     }
-    static void stack(){
-      liftRamp();
-      stopIntake();
-      startReverseIntake();
-      drive(25,directionType::rev,3);
-      stopIntake();
-    }
+    // static void stack(){
+    //   liftRamp();
+    //   stopIntake();
+    //   startOuttake();
+    //   drive(25,directionType::rev,3);
+    //   stopIntake();
+    // }
     //Deploys the arms for the first time.
     static void dropArmsDeploy(){
       liftMotor.stop(brakeType::coast);
     }
     //Macro to raise the arms to a position that is able to score low towers.
-    static void raiseArms(){
+    static void raiseArms(int amt){
       liftMotor.setVelocity(100, percentUnits::pct);
       //1080 = old val
-      liftMotor.spinFor(1200, rotationUnits::deg);
+      liftMotor.spinFor(amt, rotationUnits::deg);
     }
     //To hold the ramp in its current position.
     static void stopRamp(){
@@ -172,11 +178,11 @@ class rLib {
       intakeRMotor.spin(directionType::fwd, 90*sensitivity, percentUnits::pct);
     }
     //Starts spinning the intake motors in reverse.
-    static void startReverseIntake() {
+    static void startOuttake() {
       intakeLMotor.spin(directionType::rev, 100*sensitivity, percentUnits::pct);
       intakeRMotor.spin(directionType::rev, 100*sensitivity, percentUnits::pct);
     }
-    static void startReverseIntakeFor(float seconds) {
+    static void startOuttakeFor(float seconds) {
       intakeLMotor.setReversed(true);
       intakeRMotor.setReversed(true);
       intakeLMotor.setVelocity(50, percentUnits::pct);
@@ -291,10 +297,10 @@ void autonomous(void) {
     // rLib::stack();
     // rLib::stopIntake();
     // rLib::liftRamp();
-    // rLib::startReverseIntakeFor(1);
+    // rLib::startOuttakeFor(1);
     //rLib::drive(10, directionType::fwd, 2);
     //rLib::dropRamp();
-    // rLib::startReverseIntake();
+    // rLib::startOuttakeFor();
     // rLib::drive(20, directionType::rev, 30);
   }else if(auton == 2){
     rLib::deployBot();
@@ -350,11 +356,11 @@ int main() {
   //Set up controller callbacks.
   Controller.ButtonL1.pressed(rLib::startIntake);
   Controller.ButtonL1.released(rLib::stopIntake);
-  Controller.ButtonL2.pressed(rLib::startReverseIntake);
+  Controller.ButtonL2.pressed(rLib::startOuttake);
   Controller.ButtonL2.released(rLib::stopIntake);
 
   Controller.ButtonX.released(rLib::toggleSensitive);
-
+  
   Controller.ButtonR1.pressed(rLib::startLiftUp);
   Controller.ButtonR1.released(rLib::stopArms);
   Controller.ButtonR2.pressed(rLib::startLiftDown);
