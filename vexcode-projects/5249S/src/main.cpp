@@ -28,7 +28,6 @@ using namespace vex;
 // Robot Configuration:
 // [Name]               [Type]        [Port(s)]
 // ---- END VEXCODE CONFIGURED DEVICES ----
-using namespace vex;
 controller Controller = controller();
 motor backLeft = motor(PORT11);
 motor backRight = motor(PORT1);
@@ -50,7 +49,8 @@ class rLib {
     static void deployBot(){
       // startIntake();
       raiseArms();
-      stopIntake();
+      stopArms();
+      dropArms();
       // startReverseIntake();
       // dropArms();
       // task::sleep(50);
@@ -75,7 +75,7 @@ class rLib {
     static void dropArms(){
       liftMotor.setReversed(true);
       //1080 = old val
-      liftMotor.spinFor(550, rotationUnits::deg);
+      liftMotor.spinFor(1200, rotationUnits::deg);
       liftMotor.setReversed(false);
     }
     static void stack(){
@@ -93,7 +93,7 @@ class rLib {
     static void raiseArms(){
       liftMotor.setVelocity(100, percentUnits::pct);
       //1080 = old val
-      liftMotor.spinFor(1000, rotationUnits::deg);
+      liftMotor.spinFor(1200, rotationUnits::deg);
     }
     //To hold the ramp in its current position.
     static void stopRamp(){
@@ -212,26 +212,26 @@ class rLib {
 
     //I'm trying again
     
-    static void customDrive(double inches, directionType d) {
-      double Kp = 0;
-      double Ki = 0;
-      double Kd = 0;
-      double error = inches;
-      double previousError = 0;
-      double P;
-      double I;
-      double D;
-      double totalError = 0;
-      double power;
-      while(true) {
-        totalError += error;
-        P = Kp * error;
-        D = (error - previousError) * kDeviceTypeMotorSensor;
-        I = totalError * Ki;
-        power = P + I + D;
+    // static void customDrive(double inches, directionType d) {
+    //   double Kp = 0;
+    //   double Ki = 0;
+    //   double Kd = 0;
+    //   double error = inches;
+    //   double previousError = 0;
+    //   double P;
+    //   double I;
+    //   double D;
+    //   double totalError = 0;
+    //   double power;
+    //   while(true) {
+    //     totalError += error;
+    //     P = Kp * error;
+    //     D = (error - previousError) * kDeviceTypeMotorSensor;
+    //     I = totalError * Ki;
+    //     power = P + I + D;
 
-      }
-    }
+    //   }
+    // }
 };
  
 /*---------------------------------------------------------------------------*/
@@ -266,7 +266,7 @@ void pre_auton(void) {
 /*                                                                           */
 /*  You must modify the code to add your own robot specific commands here.   */
 /*---------------------------------------------------------------------------*/
-int auton = 2;
+int auton = 4;
 bool redSide = false;
 void autonomous(void) {
   if(auton == 0){
@@ -312,6 +312,8 @@ void autonomous(void) {
     rLib::drive(40, directionType::fwd, 28);
     //make the sensitivity more precise.
     rLib::toggleSensitive();
+  }else if(auton == 4){
+    rLib::deployBot();
   }
   
 }
