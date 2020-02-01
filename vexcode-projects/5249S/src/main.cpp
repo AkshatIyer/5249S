@@ -84,13 +84,22 @@ class rLib {
       liftMotor.spinFor(amt, rotationUnits::deg);
       liftMotor.setReversed(false);
     }
-    // static void stack(){
-    //   liftRamp();
-    //   stopIntake();
-    //   startOuttake();
-    //   drive(25,directionType::rev,3);
-    //   stopIntake();
-    // }
+    static void stack(){
+      toggleSensitive();
+      startOuttake();
+      task::sleep(100);
+      stopIntake();
+      liftRamp(1450);
+      liftMotor.stop(brakeType::hold);
+      dropRamp(1450);
+      waitUntil(!liftMotor.isSpinning());
+      liftMotor.stop(brakeType::coast);
+      toggleSensitive();
+      // startOuttake();
+      // drive(25,directionType::rev,10);
+      // stopIntake();
+      waitUntil(!Controller.ButtonLeft.pressing());
+    }
     //Deploys the arms for the first time.
     static void dropArmsDeploy(){
       liftMotor.stop(brakeType::coast);
@@ -371,6 +380,7 @@ int main() {
   Controller.ButtonDown.pressed(rLib::startRampDown);
   Controller.ButtonDown.released(rLib::stopRamp);
 
+  Controller.ButtonLeft.pressed(rLib::stack);
   //Run the pre-autonomous function.
   pre_auton();
   
