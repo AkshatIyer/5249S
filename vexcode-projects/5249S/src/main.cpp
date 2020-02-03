@@ -22,7 +22,7 @@ using namespace vex;
 
 
 
-#include "vex.h"
+
 
 // ---- START VEXCODE CONFIGURED DEVICES ----
 // Robot Configuration:
@@ -40,27 +40,48 @@ motor intakeRMotor = motor(PORT8);
 inertial sensor = inertial(PORT6);
 // A global instance of vex::competition
 competition Competition;
-
+float intakeSens = 1;
 float sensitivity = 1;
+bool skills = false;
 //All robot controls
 class rLib {
   public:
+  
     //Called during auton. Opens the robot to functioning mode.
     static void deployBot(){
       // startIntake();
-      raiseArms(850);
-      stopArms();
-      // startOuttake();
+      
+        raiseArms(1100);
+        startOuttake();
+        stopArms();
+        task::sleep(100);
+        dropArms(1100);
+        // startOuttake();
+        waitUntil(!liftMotor.isSpinning());
+        stopIntake();
       
       // task::sleep(50);
-      liftRamp(600);
-      dropRamp(600);
-      dropArms(350);
-      startOuttake();
-      task::sleep(50);
-      dropArms(425);
-      stopIntake();
+      // liftRamp(600);
+      // dropRamp(600);
+      // task::sleep(50);
+      // dropArms(350);
+      // startOuttake();
+      // dropArms(500);
       // stopIntake();
+    }
+    static void deployBotSkills(){
+      if(skills){
+        raiseArms(1100);
+        startOuttake();
+        stopArms();
+        task::sleep(100);
+        dropArms(1100);
+        // startOuttake();
+        waitUntil(!liftMotor.isSpinning());
+        stopIntake();
+        skills = false;
+        waitUntil(!Controller.ButtonRight.pressing());
+      }
     }
     //Macro to lift the ramp to a perpendicular position to the ground.
     static void liftRamp(int amt){
@@ -87,19 +108,27 @@ class rLib {
     static void stack(){
       toggleSensitive();
       startOuttake();
-      task::sleep(100);
+      task::sleep(200);
       stopIntake();
       liftRamp(1450);
       liftMotor.stop(brakeType::hold);
-      dropRamp(1450);
+      // dropRamp(1450);
       waitUntil(!liftMotor.isSpinning());
       liftMotor.stop(brakeType::coast);
+      liftMotor.setReversed(false);
       toggleSensitive();
       // startOuttake();
       // drive(25,directionType::rev,10);
       // stopIntake();
-      waitUntil(!Controller.ButtonLeft.pressing());
     }
+    static void macroStack(){
+      stack();
+      startOuttake();
+      drive(30,directionType::rev,30);
+      waitUntil(!backLeft.isSpinning());
+      stopIntake();
+    }
+    
     //Deploys the arms for the first time.
     static void dropArmsDeploy(){
       liftMotor.stop(brakeType::coast);
@@ -138,6 +167,7 @@ class rLib {
     //   frontRight.rotateFor(frontDir, degrees, rotationUnits::deg, true);
     // }
     static void turn(double velocity, double degrees, bool dirRight){
+      sensor.setHeading(0,rotationUnits::deg);
       backLeft.setVelocity(velocity, velocityUnits::pct);
       frontLeft.setVelocity(velocity, velocityUnits::pct);
       backRight.setVelocity(velocity, velocityUnits::pct);
@@ -150,9 +180,15 @@ class rLib {
       backRight.spin(backDir,velocity,velocityUnits::pct);
       frontLeft.spin(frontDir,velocity,velocityUnits::pct);
       frontRight.spin(frontDir,velocity,velocityUnits::pct);
-
-      waitUntil(sensor.heading() >= degrees);
+      if(dirRight){
+        waitUntil(sensor.rotation() >= degrees);
+      }
+      else{
+        waitUntil(sensor.rotation() <= degrees * -1);
+      }
+      Controller.Screen.print(sensor.rotation());
       stopDrive();
+      
       sensor.setHeading(0,rotationUnits::deg);
     }
     //An Autonomous method that drives a bot based on the specified velocity, direction, and inches wanted to travel.
@@ -191,6 +227,10 @@ class rLib {
       intakeLMotor.spin(directionType::rev, 100*sensitivity, percentUnits::pct);
       intakeRMotor.spin(directionType::rev, 100*sensitivity, percentUnits::pct);
     }
+    static void startRampAxis() {
+      rampMotor.spin(directionType::fwd, Controller.Axis2.value(), percentUnits::pct);
+    }
+    //Starts spinning the intake motors in reverse.
     static void startOuttakeFor(float seconds) {
       intakeLMotor.setReversed(true);
       intakeRMotor.setReversed(true);
@@ -223,6 +263,13 @@ class rLib {
         sensitivity = .5;
       else
         sensitivity = 1;
+    }
+    static void toggleIntakeSens() {
+      if(intakeSens == 1)
+        intakeSens = .5;
+      else
+        intakeSens = 1;
+      
     }
 
     //I'm trying again
@@ -281,27 +328,37 @@ void pre_auton(void) {
 /*                                                                           */
 /*  You must modify the code to add your own robot specific commands here.   */
 /*---------------------------------------------------------------------------*/
-int auton = 4;
+int auton = 0;
 bool redSide = false;
 void autonomous(void) {
   if(auton == 0){
     //One point reverse with preload
-    rLib::drive(50, directionType::rev, 12);
-    rLib::drive(50, directionType::fwd, 12);
+    rLib::drive(25, directionType::rev, 12);
+    rLib::drive(30, directionType::fwd, 20);
     rLib::deployBot();
   }else if(auton == 1){
-    //4 point auton. blue = true, red = false
+    //4 point auton. blue = false, red = true
     // rLib::deployBot(); //deploys the ramp and arms.
     // rLib::startIntake(); //starts rotating the intake.
-
+    rLib::deployBot();
+    rLib::stopIntake();
     //drive forward and intake cubes.
+    rLib::startIntake();
     rLib::drive(35, directionType::fwd, 40);
     //turn around and drive to the score zone.
     rLib::stopIntake();
+    sensor.resetHeading();
+    sensor.resetRotation();
+    waitUntil(!backLeft.isSpinning());
+    
     rLib::turn(25, 140, true);
+    waitUntil(!backLeft.isSpinning());
     rLib::drive(40, directionType::fwd, 28);
-    //make the sensitivity more precise.
-    rLib::toggleSensitive();
+    rLib::stack();
+    rLib::startOuttake();
+    rLib::drive(30,directionType::rev,20);
+    waitUntil(!backLeft.isSpinning());
+    rLib::stopIntake();
     //stack algorithm, may replace with the stack() method.
     // rLib::stack();
     // rLib::stopIntake();
@@ -329,6 +386,8 @@ void autonomous(void) {
     rLib::toggleSensitive();
   }else if(auton == 4){
     rLib::deployBot();
+  }else if(auton == 5){
+
   }
   
 }
@@ -349,6 +408,7 @@ void usercontrol(void) {
     frontLeft.spin(directionType::fwd, leftVelocity, velocityUnits::pct);
     backRight.spin(directionType::fwd, rightVelocity, velocityUnits::pct);
     backLeft.spin(directionType::fwd, rightVelocity, velocityUnits::pct);
+    
   }
 }
  
@@ -357,7 +417,7 @@ void usercontrol(void) {
 //
 int main() {
   //initializing something
-
+  pre_auton();
   //Set up callbacks for autonomous and driver control periods.
   Competition.autonomous( autonomous );
   Competition.drivercontrol( usercontrol );
@@ -375,14 +435,19 @@ int main() {
   Controller.ButtonR2.pressed(rLib::startLiftDown);
   Controller.ButtonR2.released(rLib::stopArms);
 
+
+  Controller.Axis2.changed(rLib::startRampAxis);
+  
   Controller.ButtonUp.pressed(rLib::startRampUp);
   Controller.ButtonUp.released(rLib::stopRamp);
   Controller.ButtonDown.pressed(rLib::startRampDown);
   Controller.ButtonDown.released(rLib::stopRamp);
 
-  Controller.ButtonLeft.pressed(rLib::stack);
+  
+  //Controller.ButtonRight.pressed(rLib::deployBot);
+
+  Controller.ButtonLeft.released(rLib::macroStack);
   //Run the pre-autonomous function.
-  pre_auton();
   
   //Prevent main from exiting with an infinite loop.
   while(1) {
