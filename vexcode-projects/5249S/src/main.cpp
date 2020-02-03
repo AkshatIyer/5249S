@@ -129,6 +129,16 @@ class rLib {
       stopIntake();
     }
     
+
+    static void proportionalRampUp(double degrees){
+      double proportion = degrees/100;
+      while(rampMotor.rotation(rotationUnits::deg) < degrees && Controller.ButtonUp.pressing()){
+        rampMotor.setVelocity(100-rampMotor.rotation(rotationUnits::deg)/proportion,velocityUnits::pct);
+        rampMotor.spin(directionType::fwd);
+      }
+      rampMotor.setRotation(degrees,rotationUnits::deg);
+      
+    }
     //Deploys the arms for the first time.
     static void dropArmsDeploy(){
       liftMotor.stop(brakeType::coast);
@@ -256,6 +266,9 @@ class rLib {
     //Pulls the ramp back down to a resting angle.
     static void startRampDown() {
       rampMotor.spin(directionType::rev, 100*sensitivity, percentUnits::pct);
+      if(rampMotor.rotation(rotationUnits::deg) < 0){
+        rampMotor.setRotation(0,rotationUnits::deg);
+      }
     }
     //Toggles the sensitivity between high and low sensitivity.
     static void toggleSensitive() {
