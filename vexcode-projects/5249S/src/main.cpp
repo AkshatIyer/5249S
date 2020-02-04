@@ -1,33 +1,12 @@
-// To complete the VEXcode V5 Text project upgrade process, please follow the
-// steps below.
-// 
-// 1. You can use the Robot Configuration window to recreate your V5 devices
-//   - including any motors, sensors, 3-wire devices, and controllers.
-// 
-// 2. All previous code located in main.cpp has now been commented out. You
-//   will need to migrate this code to the new "int main" structure created
-//   below and keep in mind any new device names you may have set from the
-//   Robot Configuration window. 
-// 
-// If you would like to go back to your original project, a complete backup
-// of your original (pre-upgraded) project was created in a backup folder
-// inside of this project's folder.
-
-// ---- START VEXCODE CONFIGURED DEVICES ----
-// ---- END VEXCODE CONFIGURED DEVICES ----
-
 #include "vex.h"
 
 using namespace vex;
 
 
-
-
-
 // ---- START VEXCODE CONFIGURED DEVICES ----
 // Robot Configuration:
 // [Name]               [Type]        [Port(s)]
-// ---- END VEXCODE CONFIGURED DEVICES ----
+
 controller Controller = controller();
 motor backLeft = motor(PORT11);
 motor backRight = motor(PORT1);
@@ -38,10 +17,13 @@ motor rampMotor = motor(PORT4);
 motor intakeLMotor = motor(PORT3,true);
 motor intakeRMotor = motor(PORT8);
 inertial sensor = inertial(PORT6);
+// ---- END VEXCODE CONFIGURED DEVICES ----
 // A global instance of vex::competition
 competition Competition;
+
 float intakeSens = 1;
 float sensitivity = 1;
+const double defaultDeg = 285.6;
 bool skills = false;
 //All robot controls
 class rLib {
@@ -51,11 +33,11 @@ class rLib {
     static void deployBot(){
       // startIntake();
       
-        raiseArms(1100);
+        raiseArms(1200);
         startOuttake();
         stopArms();
         task::sleep(100);
-        dropArms(1100);
+        dropArms(1200);
         // startOuttake();
         waitUntil(!liftMotor.isSpinning());
         stopIntake();
@@ -128,16 +110,35 @@ class rLib {
       waitUntil(!backLeft.isSpinning());
       stopIntake();
     }
-    
-
-    static void proportionalRampUp(double degrees){
-      double proportion = degrees/100;
-      while(rampMotor.rotation(rotationUnits::deg) < degrees && Controller.ButtonUp.pressing()){
+    static void setRampDefault(){
+      double degrees = defaultDeg;
+      double proportion = (degrees - rampMotor.rotation(rotationUnits::deg))/100;
+      while(rampMotor.rotation(rotationUnits::deg) < degrees){
         rampMotor.setVelocity(100-rampMotor.rotation(rotationUnits::deg)/proportion,velocityUnits::pct);
         rampMotor.spin(directionType::fwd);
+        Controller.Screen.clearLine();
+        
       }
-      rampMotor.setRotation(degrees,rotationUnits::deg);
+      Controller.Screen.print(rampMotor.rotation(rotationUnits::deg));
+      rampMotor.setRotation(degrees, rotationUnits::deg);
       
+    }
+
+    static void proportionalRampUp(){
+      double degrees = 1450;
+      double proportion = (degrees - rampMotor.rotation(rotationUnits::deg))/100;
+      while(rampMotor.rotation(rotationUnits::deg) < degrees){
+        rampMotor.setVelocity(100-rampMotor.rotation(rotationUnits::deg)/proportion,velocityUnits::pct);
+        rampMotor.spin(directionType::fwd);
+        Controller.Screen.clearLine();
+        
+      }
+      Controller.Screen.print(rampMotor.rotation(rotationUnits::deg));
+      rampMotor.setRotation(degrees, rotationUnits::deg);
+      
+    }
+    static void defaultRamp(){
+      rampMotor.rotateTo(defaultDeg,rotationUnits::deg);
     }
     //Deploys the arms for the first time.
     static void dropArmsDeploy(){
@@ -152,6 +153,8 @@ class rLib {
     //To hold the ramp in its current position.
     static void stopRamp(){
       rampMotor.stop(brakeType::hold);
+      Controller.Screen.clearLine();
+      Controller.Screen.print(rampMotor.rotation(rotationUnits::deg));
     }
     //To hold the arms in its current position.
     static void stopArms(){
@@ -239,6 +242,9 @@ class rLib {
     }
     static void startRampAxis() {
       rampMotor.spin(directionType::fwd, Controller.Axis2.value(), percentUnits::pct);
+      if(Controller.Axis2.value() == 0){
+        stopRamp();
+      }
     }
     //Starts spinning the intake motors in reverse.
     static void startOuttakeFor(float seconds) {
@@ -341,8 +347,9 @@ void pre_auton(void) {
 /*                                                                           */
 /*  You must modify the code to add your own robot specific commands here.   */
 /*---------------------------------------------------------------------------*/
-int auton = 0;
+int auton = 1;
 bool redSide = false;
+//static void drive(double velocity, directionType dir, int inches)
 void autonomous(void) {
   if(auton == 0){
     //One point reverse with preload
@@ -355,9 +362,10 @@ void autonomous(void) {
     // rLib::startIntake(); //starts rotating the intake.
     rLib::deployBot();
     rLib::stopIntake();
+    rLib::defaultRamp();
     //drive forward and intake cubes.
     rLib::startIntake();
-    rLib::drive(35, directionType::fwd, 40);
+    rLib::drive(30, directionType::fwd, 40);
     //turn around and drive to the score zone.
     rLib::stopIntake();
     sensor.resetHeading();
@@ -366,7 +374,9 @@ void autonomous(void) {
     
     rLib::turn(25, 140, true);
     waitUntil(!backLeft.isSpinning());
+    rLib::startIntake();
     rLib::drive(40, directionType::fwd, 28);
+    
     rLib::stack();
     rLib::startOuttake();
     rLib::drive(30,directionType::rev,20);
@@ -451,12 +461,11 @@ int main() {
 
   Controller.Axis2.changed(rLib::startRampAxis);
   
-  Controller.ButtonUp.pressed(rLib::startRampUp);
+  Controller.ButtonRight.pressed(rLib::defaultRamp);
+  Controller.ButtonUp.pressed(rLib::proportionalRampUp);
   Controller.ButtonUp.released(rLib::stopRamp);
   Controller.ButtonDown.pressed(rLib::startRampDown);
   Controller.ButtonDown.released(rLib::stopRamp);
-
-  
   //Controller.ButtonRight.pressed(rLib::deployBot);
 
   Controller.ButtonLeft.released(rLib::macroStack);
