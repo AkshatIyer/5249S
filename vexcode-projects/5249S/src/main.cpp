@@ -53,11 +53,11 @@ class rLib {
     }
     static void deployBotSkills(){
       if(skills){
-        raiseArms(1100);
+        raiseArms(600);
         startOuttake();
         stopArms();
         task::sleep(100);
-        dropArms(1100);
+        dropArms(600);
         // startOuttake();
         waitUntil(!liftMotor.isSpinning());
         stopIntake();
@@ -88,10 +88,10 @@ class rLib {
       liftMotor.setReversed(false);
     }
     static void stack(){
-      toggleSensitive();
       startOuttake();
       task::sleep(200);
       stopIntake();
+      toggleSensitive();
       liftRamp(1450);
       liftMotor.stop(brakeType::hold);
       // dropRamp(1450);
@@ -127,7 +127,7 @@ class rLib {
     static void proportionalRampUp(){
       double degrees = 1450;
       double proportion = (degrees - rampMotor.rotation(rotationUnits::deg))/100;
-      while(rampMotor.rotation(rotationUnits::deg) < degrees){
+      while(rampMotor.rotation(rotationUnits::deg) < degrees - 50){
         rampMotor.setVelocity(100-rampMotor.rotation(rotationUnits::deg)/proportion,velocityUnits::pct);
         rampMotor.spin(directionType::fwd);
         Controller.Screen.clearLine();
@@ -267,7 +267,7 @@ class rLib {
     }
     //Pushes the ramp to a 90 degree angle to the ground.
     static void startRampUp() {
-      rampMotor.spin(directionType::fwd, 100*sensitivity, percentUnits::pct);
+      rampMotor.spin(directionType::fwd, 80*sensitivity, percentUnits::pct);
     }
     //Pulls the ramp back down to a resting angle.
     static void startRampDown() {
@@ -349,8 +349,8 @@ void pre_auton(void) {
 /*---------------------------------------------------------------------------*/
 int auton = 1;
 bool redSide = false;
-const boolean leftTurn = false;
-const boolean rightTurn = true;
+const bool leftTurn = false;
+const bool rightTurn = true;
 //static void drive(double velocity, directionType dir, int inches)
 void autonomous(void) {
   if(auton == 0){
@@ -364,10 +364,10 @@ void autonomous(void) {
     // rLib::startIntake(); //starts rotating the intake.
     rLib::deployBot();
     rLib::stopIntake();
-    rLib::defaultRamp();
+    // rLib::defaultRamp();
     //drive forward and intake cubes.
     rLib::startIntake();
-    rLib::drive(30, directionType::fwd, 40);
+    rLib::drive(30, directionType::fwd, 35);
     //turn around and drive to the score zone.
     rLib::stopIntake();
     sensor.resetHeading();
@@ -407,6 +407,36 @@ void autonomous(void) {
     rLib::toggleSensitive();
   }else if(auton == 4){
     rLib::deployBot();
+  }else if(auton == 5){
+    rLib::drive(25, directionType::rev, 12);
+    rLib::drive(30, directionType::fwd, 20);
+    rLib::deployBot();
+  }else if(auton == 1){
+    //4 point auton. blue = false, red = true
+    // rLib::deployBot(); //deploys the ramp and arms.
+    // rLib::startIntake(); //starts rotating the intake.
+    rLib::deployBot();
+    rLib::stopIntake();
+    rLib::defaultRamp();
+    //drive forward and intake cubes.
+    rLib::startIntake();
+    rLib::drive(30, directionType::fwd, 40);
+    //turn around and drive to the score zone.
+    rLib::stopIntake();
+    sensor.resetHeading();
+    sensor.resetRotation();
+    waitUntil(!backLeft.isSpinning());
+    
+    rLib::turn(25, 145, rightTurn);
+    waitUntil(!backLeft.isSpinning());
+    rLib::startIntake();
+    rLib::drive(40, directionType::fwd, 20);
+    
+    rLib::stack();
+    rLib::startOuttake();
+    rLib::drive(30,directionType::rev,20);
+    waitUntil(!backLeft.isSpinning());
+    rLib::stopIntake();
   }
   
 }
@@ -458,7 +488,7 @@ int main() {
   Controller.Axis2.changed(rLib::startRampAxis);
   
   Controller.ButtonRight.pressed(rLib::defaultRamp);
-  Controller.ButtonUp.pressed(rLib::proportionalRampUp);
+  Controller.ButtonUp.pressed(rLib::startRampUp);
   Controller.ButtonUp.released(rLib::stopRamp);
   Controller.ButtonDown.pressed(rLib::startRampDown);
   Controller.ButtonDown.released(rLib::stopRamp);
