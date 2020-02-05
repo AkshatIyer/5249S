@@ -349,6 +349,8 @@ void pre_auton(void) {
 /*---------------------------------------------------------------------------*/
 int auton = 1;
 bool redSide = false;
+const boolean leftTurn = false;
+const boolean rightTurn = true;
 //static void drive(double velocity, directionType dir, int inches)
 void autonomous(void) {
   if(auton == 0){
@@ -372,7 +374,7 @@ void autonomous(void) {
     sensor.resetRotation();
     waitUntil(!backLeft.isSpinning());
     
-    rLib::turn(25, 140, true);
+    rLib::turn(25, 140, rightTurn);
     waitUntil(!backLeft.isSpinning());
     rLib::startIntake();
     rLib::drive(40, directionType::fwd, 28);
@@ -391,10 +393,6 @@ void autonomous(void) {
     //rLib::dropRamp();
     // rLib::startOuttakeFor();
     // rLib::drive(20, directionType::rev, 30);
-  }else if(auton == 2){
-    rLib::deployBot();
-    task::sleep(1000);
-    // rLib::stack();
   }else if(auton == 3){ //Akshat's attempt at a 6 point auton
     rLib::deployBot(); //deploys the ramp and arms.
     rLib::startIntake();
@@ -409,8 +407,6 @@ void autonomous(void) {
     rLib::toggleSensitive();
   }else if(auton == 4){
     rLib::deployBot();
-  }else if(auton == 5){
-
   }
   
 }
