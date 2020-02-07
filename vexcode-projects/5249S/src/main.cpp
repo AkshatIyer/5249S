@@ -26,18 +26,18 @@ float sensitivity = 1;
 const double defaultDeg = 285.6;
 bool skills = false;
 //All robot controls
-class rLib {
+class rLib { //This is a library of methods that the robot can perform. The methods listed here are used throughout the robot's autonomous and driver functions.
   public:
   
     //Called during auton. Opens the robot to functioning mode.
-    static void deployBot(){
+    static void deployBot(){ 
       // startIntake();
       
-        raiseArms(1200);
+        raiseArms(600);
         startOuttake();
         stopArms();
         task::sleep(100);
-        dropArms(1200);
+        dropArms(600);
         // startOuttake();
         waitUntil(!liftMotor.isSpinning());
         stopIntake();
@@ -47,10 +47,12 @@ class rLib {
       // dropRamp(600);
       // task::sleep(50);
       // dropArms(350);
+      //n00b
       // startOuttake();
       // dropArms(500);
       // stopIntake();
     }
+    //This is for the driver to deploy during 
     static void deployBotSkills(){
       if(skills){
         raiseArms(600);
@@ -89,7 +91,7 @@ class rLib {
     }
     static void stack(){
       startOuttake();
-      task::sleep(200);
+      task::sleep(400);
       stopIntake();
       toggleSensitive();
       liftRamp(1450);
@@ -347,7 +349,7 @@ void pre_auton(void) {
 /*                                                                           */
 /*  You must modify the code to add your own robot specific commands here.   */
 /*---------------------------------------------------------------------------*/
-int auton = 1;
+int auton = 12;
 bool redSide = false;
 const bool leftTurn = false;
 const bool rightTurn = true;
@@ -358,7 +360,52 @@ void autonomous(void) {
     rLib::drive(25, directionType::rev, 12);
     rLib::drive(30, directionType::fwd, 20);
     rLib::deployBot();
-  }else if(auton == 1){
+  }
+//trying something
+else if(auton == 12){
+  // rLib::deployBot();
+  rLib::startIntake();
+  rLib::drive(10,directionType::fwd,5);
+  rLib::drive(25,directionType::fwd,45);
+  rLib::drive(30,directionType::fwd,19);
+  rLib::turn(30,3,rightTurn);
+  rLib::drive(30,directionType::fwd,24);
+  sensor.resetRotation();
+  rLib::turn(50,6,leftTurn);
+  // sensor.resetRotation();
+  // rLib::turn(20,8,leftTurn);
+  // rLib::drive(100,directionType::rev,5);
+  // rLib::drive(100,directionType::fwd,5);
+  //around the tower
+  // rLib::turn(10,10,!leftTurn);
+  // rLib::stopIntake();
+  // rLib::turn(20,10,rightTurn);
+  // rLib::startIntake();
+  // rLib::drive(30,directionType::fwd,10);
+  // rLib::turn(20,10,leftTurn);
+  // rLib::turn(10,10,!rightTurn);
+  // rLib::drive(20,directionType::fwd,20);
+  // sensor.resetRotation();
+  // rLib::turn(10,20,!leftTurn);
+  // rLib::drive(20,directionType::fwd,20);
+  // sensor.resetRotation();
+  // rLib::turn(10,10,!rightTurn);
+  // rLib::startIntake();
+  // rLib::drive(30,directionType::fwd,15);
+  // sensor.resetRotation();
+  // rLib::turn(10,10,!rightTurn);
+  // rLib::drive(20,directionType::rev,5);
+  // rLib::startIntake();
+  // task::sleep(300);
+  // rLib::stopIntake();
+  // rLib::drive(20,directionType::fwd,30);
+  // sensor.resetRotation();
+  // rLib::turn(20,45,!rightTurn);
+  // rLib::stack();
+  // rLib::startOuttake();
+  // rLib::drive(10,directionType::rev,10);
+  // rLib::defaultRamp();
+}else if(auton == 1){
     //4 point auton. blue = false, red = true
     // rLib::deployBot(); //deploys the ramp and arms.
     // rLib::startIntake(); //starts rotating the intake.
@@ -374,16 +421,53 @@ void autonomous(void) {
     sensor.resetRotation();
     waitUntil(!backLeft.isSpinning());
     
-    rLib::turn(25, 140, rightTurn);
+    rLib::turn(25, 140, leftTurn);
     waitUntil(!backLeft.isSpinning());
     rLib::startIntake();
-    rLib::drive(40, directionType::fwd, 28);
+    rLib::drive(40, directionType::fwd, 25);
     
     rLib::stack();
     rLib::startOuttake();
     rLib::drive(30,directionType::rev,20);
     waitUntil(!backLeft.isSpinning());
     rLib::stopIntake();
+    rLib::defaultRamp();
+    //stack algorithm, may replace with the stack() method.
+    // rLib::stack();
+    // rLib::stopIntake();
+    // rLib::liftRamp();
+    // rLib::startOuttakeFor(1);
+    //rLib::drive(10, directionType::fwd, 2);
+    //rLib::dropRamp();
+    // rLib::startOuttakeFor();
+    // rLib::drive(20, directionType::rev, 30);
+  }else if(auton == 10){
+    //4 point auton. blue = false, red = true
+    // rLib::deployBot(); //deploys the ramp and arms.
+    // rLib::startIntake(); //starts rotating the intake.
+    rLib::deployBot();
+    rLib::stopIntake();
+    // rLib::defaultRamp();
+    //drive forward and intake cubes.
+    rLib::startIntake();
+    rLib::drive(30, directionType::fwd, 35);
+    //turn around and drive to the score zone.
+    rLib::stopIntake();
+    sensor.resetHeading();
+    sensor.resetRotation();
+    waitUntil(!backLeft.isSpinning());
+    
+    rLib::turn(25, 135, leftTurn);
+    waitUntil(!backLeft.isSpinning());
+    rLib::startIntake();
+    rLib::drive(40, directionType::fwd, 25);
+    
+    rLib::stack();
+    rLib::startOuttake();
+    rLib::drive(30,directionType::rev,20);
+    waitUntil(!backLeft.isSpinning());
+    rLib::stopIntake();
+    rLib::defaultRamp();
     //stack algorithm, may replace with the stack() method.
     // rLib::stack();
     // rLib::stopIntake();
@@ -411,7 +495,7 @@ void autonomous(void) {
     rLib::drive(25, directionType::rev, 12);
     rLib::drive(30, directionType::fwd, 20);
     rLib::deployBot();
-  }else if(auton == 1){
+  }else if(auton == 5){
     //4 point auton. blue = false, red = true
     // rLib::deployBot(); //deploys the ramp and arms.
     // rLib::startIntake(); //starts rotating the intake.
