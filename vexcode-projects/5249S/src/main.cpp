@@ -70,6 +70,7 @@ class rLib { //This is a library of methods that the robot can perform. The meth
       liftMotor.spinFor(amt, rotationUnits::deg);
       liftMotor.setReversed(false);
     }
+    //Set of instructions to stack cubes for autonomous.
     static void stack(){
       startOuttake();
       task::sleep(400);
@@ -85,6 +86,7 @@ class rLib { //This is a library of methods that the robot can perform. The meth
       // startOuttake();
       // drive(25,directionType::rev,10);
       // stopIntake();
+    //Macro for stacking cubes and backing up afterwards. 
     }
     static void macroStack(){
       stack();
@@ -93,20 +95,8 @@ class rLib { //This is a library of methods that the robot can perform. The meth
       waitUntil(!backLeft.isSpinning());
       stopIntake();
     }
-    static void setRampDefault(){
-      double degrees = defaultDeg;
-      double proportion = (degrees - rampMotor.rotation(rotationUnits::deg))/100;
-      while(rampMotor.rotation(rotationUnits::deg) < degrees){
-        rampMotor.setVelocity(100-rampMotor.rotation(rotationUnits::deg)/proportion,velocityUnits::pct);
-        rampMotor.spin(directionType::fwd);
-        Controller.Screen.clearLine();
-        
-      }
-      Controller.Screen.print(rampMotor.rotation(rotationUnits::deg));
-      rampMotor.setRotation(degrees, rotationUnits::deg);
-      
-    }
-
+    //Pushes the ramp up quickly but slows down near the end. 
+    //THIS MACRO IS UNUSED AS OF NOW
     static void proportionalRampUp(){
       double degrees = 1450;
       double proportion = (degrees - rampMotor.rotation(rotationUnits::deg))/100;
@@ -120,6 +110,7 @@ class rLib { //This is a library of methods that the robot can perform. The meth
       rampMotor.setRotation(degrees, rotationUnits::deg);
       
     }
+    //Sets the ramp at the default position.
     static void defaultRamp(){
       rampMotor.rotateTo(defaultDeg, rotationUnits::deg);
     }
@@ -140,34 +131,16 @@ class rLib { //This is a library of methods that the robot can perform. The meth
       liftMotor.stop(brakeType::hold);
     }
     //An Autonomous method that turns a bot based on the specified degrees, velocity, and direction of the robot.
-    // static void turn(double velocity, double degrees, bool dirRight){
-    //   //Sets the velocity of all motors to the specified velocity above
-    //   backLeft.setVelocity(velocity, velocityUnits::pct);
-    //   frontLeft.setVelocity(velocity, velocityUnits::pct);
-    //   backRight.setVelocity(velocity, velocityUnits::pct);
-    //   frontRight.setVelocity(velocity, velocityUnits::pct);
-    //   //Degrees multiplied by digits of PI in order to obtain degree calculations.
-    //   degrees = degrees * 3.141592653589793238462643383279;
-    //   //Determines the direction the bot will travel in.
-    //   directionType backDir = dirRight ? directionType::fwd : directionType::rev;
-    //   directionType frontDir = dirRight ? directionType::rev : directionType::fwd;
-
-    //   //Turns the bot using the specified parameters and calculations done above.
-    //   backLeft.rotateFor(backDir, degrees, rotationUnits::deg, false);
-    //   backRight.rotateFor(backDir, degrees, rotationUnits::deg, false);
-    //   frontLeft.rotateFor(frontDir, degrees, rotationUnits::deg, false);
-    //   frontRight.rotateFor(frontDir, degrees, rotationUnits::deg, true);
-    // }
     static void turn(double velocity, double degrees, bool dirRight){
-      sensor.setHeading(0,rotationUnits::deg);
+      sensor.setHeading(0,rotationUnits::deg); //Resets the gyroscope initial angle.
       backLeft.setVelocity(velocity, velocityUnits::pct);
       frontLeft.setVelocity(velocity, velocityUnits::pct);
       backRight.setVelocity(velocity, velocityUnits::pct);
       frontRight.setVelocity(velocity, velocityUnits::pct);
-      //
+      //determines direction needed for each motor depending on a boolean parameter.
       directionType backDir = dirRight ? directionType::fwd : directionType::rev;
       directionType frontDir = dirRight ? directionType::rev : directionType::fwd;
-      //
+      //Spins the motors until the gyroscope reading is greater than or equal to the desired turn angle.
       backLeft.spin(backDir,velocity,velocityUnits::pct);
       backRight.spin(backDir,velocity,velocityUnits::pct);
       frontLeft.spin(frontDir,velocity,velocityUnits::pct);
@@ -178,10 +151,10 @@ class rLib { //This is a library of methods that the robot can perform. The meth
       else{
         waitUntil(sensor.rotation() <= degrees * -1);
       }
-      Controller.Screen.print(sensor.rotation());
+      Controller.Screen.print(sensor.rotation()); //Prints the gyroscope reading for development purposes.
       stopDrive();
       
-      sensor.setHeading(0,rotationUnits::deg);
+      sensor.setHeading(0,rotationUnits::deg); //Resets the gyroscope reading for the next turn. 
     }
     //An Autonomous method that drives a bot based on the specified velocity, direction, and inches wanted to travel.
     static void drive(double velocity, directionType dir, double inches){
@@ -219,11 +192,13 @@ class rLib { //This is a library of methods that the robot can perform. The meth
       intakeLMotor.spin(directionType::rev, 100*sensitivity, percentUnits::pct);
       intakeRMotor.spin(directionType::rev, 100*sensitivity, percentUnits::pct);
     }
+    //Short outtake and intake to fix any cubes intaken diagonally.
     static void fixCubes(int ms) {
       startOuttake();
       task::sleep(ms);
       startIntake();
     }
+    //Sets up the ramp to rotate based on the axis value of the right axis.
     static void startRampAxis() {
       rampMotor.spin(directionType::fwd, Controller.Axis2.value(), percentUnits::pct);
       if(Controller.Axis2.value() == 0){
@@ -267,6 +242,7 @@ class rLib { //This is a library of methods that the robot can perform. The meth
       else
         sensitivity = 1;
     }
+    //Toggles the sensitivity of JUST THE INTAKE MOTORS.
     static void toggleIntakeSens() {
       if(intakeSens == 1)
         intakeSens = .5;
@@ -285,7 +261,7 @@ class rLib { //This is a library of methods that the robot can perform. The meth
 /*  function is only called once after the cortex has been powered on and    */
 /*  not every time that the robot is disabled.                               */
 /*---------------------------------------------------------------------------*/
-void pre_auton(void) {
+void pre_auton(void) { //Used to calibrate the gyroscope and reset motor encoders.
   backLeft.resetRotation();
   backRight.resetRotation();
   frontLeft.resetRotation();
@@ -308,20 +284,22 @@ void pre_auton(void) {
 /*                                                                           */
 /*  You must modify the code to add your own robot specific commands here.   */
 /*---------------------------------------------------------------------------*/
-enum Auton {
+enum Auton { //A list of enumerated values for easy auton selection.
   deploy,
   onePoint,
   fivePointRed,
   fivePointBlue,
   skills
 };
-
+//Declaring which auton is going to be run and on which side it is for. 
 Auton auton = skills;
 bool redSide = false;
+//Constants that make it easy to identify whether the turn is a left or right turn. 
 const bool leftTurn = false;
 const bool rightTurn = true;
 
 void autonomous(void) {
+  //solely deploys the bot for testing purposes.
   if(auton == deploy){
     rLib::deployBot();
   }else if(auton == onePoint){
@@ -349,7 +327,7 @@ void autonomous(void) {
     rLib::startIntake();
     rLib::drive(40, directionType::fwd, 20);
     rLib::drive(20, directionType::fwd, 8.75);
-    
+    //stack cubes and back up.
     rLib::stack();
     rLib::startOuttake();
     rLib::drive(30,directionType::rev,20);
@@ -378,6 +356,7 @@ void autonomous(void) {
     rLib::startOuttake();
     task::sleep(30);
     rLib::startIntake();
+    //stack cubes and back up.
     rLib::stack();
     rLib::drive(5,directionType::fwd,0.5);
     rLib::startOuttake();
@@ -387,48 +366,17 @@ void autonomous(void) {
     rLib::defaultRamp();
   }else if(auton == skills){
     rLib::deployBot();
+    //Drive forward with intake.
     rLib::startIntake();
     rLib::drive(10,directionType::fwd,5);
     rLib::drive(25,directionType::fwd,40);
-    rLib::fixCubes(50);
+    rLib::fixCubes(50); //If there are any diagonal cubes, this will fix it.
     rLib::drive(30,directionType::fwd,24);
     rLib::turn(30,3,rightTurn);
     rLib::drive(30,directionType::fwd,24);
     sensor.resetRotation();
-    rLib::turn(50,6,leftTurn);
-    // sensor.resetRotation();
-    // rLib::turn(20,8,leftTurn);
-    // rLib::drive(100,directionType::rev,5);
-    // rLib::drive(100,directionType::fwd,5);
-    //around the tower
-    // rLib::turn(10,10,!leftTurn);
-    // rLib::stopIntake();
-    // rLib::turn(20,10,rightTurn);
-    // rLib::startIntake();
-    // rLib::drive(30,directionType::fwd,10);
-    // rLib::turn(20,10,leftTurn);
-    // rLib::turn(10,10,!rightTurn);
-    // rLib::drive(20,directionType::fwd,20);
-    // sensor.resetRotation();
-    // rLib::turn(10,20,!leftTurn);
-    // rLib::drive(20,directionType::fwd,20);
-    // sensor.resetRotation();
-    // rLib::turn(10,10,!rightTurn);
-    // rLib::startIntake();
-    // rLib::drive(30,directionType::fwd,15);
-    // sensor.resetRotation();
-    // rLib::turn(10,10,!rightTurn);
-    // rLib::drive(20,directionType::rev,5);
-    // rLib::startIntake();
-    // task::sleep(300);
-    // rLib::stopIntake();
-    // rLib::drive(20,directionType::fwd,30);
-    // sensor.resetRotation();
-    // rLib::turn(20,45,!rightTurn);
-    // rLib::stack();
-    // rLib::startOuttake();
-    // rLib::drive(10,directionType::rev,10);
-    // rLib::defaultRamp();
+    rLib::turn(50,6,leftTurn); //launch the cube off the top of the ramp into the tower.
+    //UNFINISHED
   }
 }
 /*---------------------------------------------------------------------------*/
@@ -442,8 +390,10 @@ void autonomous(void) {
 /*---------------------------------------------------------------------------*/
 void usercontrol(void) {
   while (1) {
+    //Uses the values of the Controller Axes to calculate the velocity of the motors.
     double leftVelocity = (Controller.Axis3.value() - Controller.Axis4.value()) * sensitivity * .8;
     double rightVelocity = (Controller.Axis3.value() + Controller.Axis4.value()) * sensitivity * .8;
+    //Spins the motors based on the calculated velocity.
     frontRight.spin(directionType::fwd, leftVelocity, velocityUnits::pct);
     frontLeft.spin(directionType::fwd, leftVelocity, velocityUnits::pct);
     backRight.spin(directionType::fwd, rightVelocity, velocityUnits::pct);
