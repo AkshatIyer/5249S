@@ -7,8 +7,8 @@ using namespace vex;
 // [Name]               [Type]        [Port(s)]
 class RMotor : public motor{
   public:
-    RMotor(int32_t PORT);
-    RMotor(int32_t PORT,bool reversed);
+    RMotor(int32_t PORT) :motor(PORT) {}
+    RMotor(int32_t PORT,bool reversed) :motor(PORT,reversed){}
     double stop(brakeType b){
       this->motor::stop(b);
       return this->motor::rotation(rotationUnits::deg)  * 4 * M_PI; //returns distance travelled by the robot in inches.
@@ -302,7 +302,7 @@ class rLib { //This is a library of methods that the robot can perform. The meth
     }
     //Pushes the ramp to a 90 degree angle to the ground.
     static void startRampUp() {
-      rampMotor.spin(directionType::fwd, 80*sensitivity, percentUnits::pct);
+      rampMotor.spin(directionType::fwd, 100*sensitivity, percentUnits::pct);
     }
     //Pulls the ramp back down to a resting angle.
     static void startRampDown() {
@@ -425,12 +425,10 @@ class Robot{
       angleFacing = sensor.rotation();
     }
 };
-
 Robot s = Robot();
 class Button{
   private:
     double x1,y1,x2,y2;
-    bool isPressed;
     using f_int_t = void(*)(Button b);
   public:
     Button(double x1,double x2,double y1,double y2){
@@ -443,16 +441,40 @@ class Button{
       
     }
 };
+static int x = 26, y = 25;
+double multiplier = 0.01;
 class Field{
-  static void constructField(){
-    drawBoundaries();
-  }
-  static void drawBoundaries(){
-    Brain.Screen.drawLine(0,0,144,0);
-    Brain.Screen.drawLine(144,0,144,144);
-    Brain.Screen.drawLine(144,144,0,144);
-    Brain.Screen.drawLine(0,144,0,0);
-  }
+  public:
+    static void constructField(){
+      Brain.Screen.drawImageFromFile("field.bmp", 0, 0);
+    }
+    static void changeX(){
+      x+=Controller.Axis4.value() * multiplier;
+      if(x < 223 && x > 25){
+        Brain.Screen.drawImageFromFile("field.bmp",0,0);
+        Brain.Screen.drawCircle(x, y, 5, ClrRed);
+      }
+      else{
+        x-=Controller.Axis3.value() * multiplier;
+      }
+    }
+    static void changeY(){
+      y-=Controller.Axis3.value() * multiplier;
+      if(y < 221 && y > 24){
+        Brain.Screen.drawImageFromFile("field.bmp",0,0);
+        Brain.Screen.drawCircle(x, y, 5, ClrRed);
+      }
+      else{
+        y+=Controller.Axis3.value() * multiplier;
+      }
+    }
+    static void printPixel(){
+      Brain.Screen.printAt(400,40,"%d, %d",x,y);
+    }
+    //25,24 TOPLEFT
+    //223,24 TOPRIGHT
+    //223,221 BOTTOMRIGHT
+    //25,221 BOTTOMLEFT
 };
 
  
@@ -659,10 +681,14 @@ void autonomous(void) {
 
   }
   else if(auton == pid){ //also for testing position tracking.
-    rLib::deployBot();
-    s.stateIntake(true,true); //intake is running
-    rLib::pidDrive(10,70);
-    s.moveTo(62,0,70); //x, y, maxVelocity.
+    // rLib::deployBot();
+    // s.stateIntake(true,true); //intake is running
+    // rLib::pidDrive(10,70);
+    // s.moveTo(62,0,70); //x, y, maxVelocity.
+    Field::constructField();
+    Controller.Axis4.changed(Field::changeX);
+    Controller.Axis3.changed(Field::changeY);
+    Controller.ButtonA.pressed(Field::printPixel);
   }
 }
 /*---------------------------------------------------------------------------*/
@@ -691,10 +717,11 @@ void usercontrol(void) {
 // Main will set up the competition functions and callbacks.
 //
 int main() {
-  pre_auton();
-  //Set up callbacks for autonomous and driver control periods.
-  Competition.autonomous( autonomous );
-  Competition.drivercontrol( usercontrol );
+  // pre_auton();
+  autonomous();
+  // //Set up callbacks for autonomous and driver control periods.
+  // Competition.autonomous( autonomous );
+  // Competition.drivercontrol( usercontrol );
 
   //Set up controller callbacks.
   Controller.ButtonL1.pressed(rLib::startIntake);
