@@ -1,15 +1,42 @@
 #include "vex.h"
-
+#include "math.h"
 using namespace vex;
 
 // ---- START VEXCODE CONFIGURED DEVICES ----
 // Robot Configuration:
 // [Name]               [Type]        [Port(s)]
+class RMotor : public motor{
+  public:
+    RMotor(int32_t PORT);
+    RMotor(int32_t PORT,bool reversed);
+    double stop(brakeType b){
+      this->motor::stop(b);
+      return this->motor::rotation(rotationUnits::deg)  * 4 * M_PI; //returns distance travelled by the robot in inches.
+    }
+    void spin(directionType d, double velocity, velocityUnits v, double maxSpeed){
+      if(velocity > maxSpeed){
+        velocity = maxSpeed;
+        this->motor::spin(d,velocity,v);
+      }
+      else{
+        velocity = maxSpeed;
+        this->motor::spin(d,velocity,v);
+      }
+    }
+    void spin(directionType d, double velocity, velocityUnits v){
+      this->motor::spin(d,velocity,v);
+    }
+    void spin(directionType d){
+      this->motor::spin(d);
+    }
+
+};
+brain Brain = brain();
 controller Controller = controller();
-motor backLeft = motor(PORT11);
-motor backRight = motor(PORT1);
-motor frontLeft = motor(PORT20, true);
-motor frontRight = motor(PORT10, true);
+RMotor backLeft = RMotor(PORT11);
+RMotor backRight = RMotor(PORT1);
+RMotor frontLeft = RMotor(PORT20, true);
+RMotor frontRight = RMotor(PORT10, true);
 motor liftMotor = motor(PORT7);
 motor rampMotor = motor(PORT4);
 motor intakeLMotor = motor(PORT3, true);
@@ -34,7 +61,6 @@ enum Auton {
   pid
 };
 Auton auton = pid;
-//All robot controls
 class rLib { //This is a library of methods that the robot can perform. The methods listed here are used throughout the robot's autonomous and driver functions.
   public:
   
@@ -183,25 +209,6 @@ class rLib { //This is a library of methods that the robot can perform. The meth
       frontLeft.spin(d);
       frontRight.spin(d);
     }
-    //An Autonomous method that turns a bot based on the specified degrees, velocity, and direction of the robot.
-    // static void turn(double velocity, double degrees, bool dirRight){
-    //   //Sets the velocity of all motors to the specified velocity above
-    //   backLeft.setVelocity(velocity, velocityUnits::pct);
-    //   frontLeft.setVelocity(velocity, velocityUnits::pct);
-    //   backRight.setVelocity(velocity, velocityUnits::pct);
-    //   frontRight.setVelocity(velocity, velocityUnits::pct);
-    //   //Degrees multiplied by digits of PI in order to obtain degree calculations.
-    //   degrees = degrees * 3.141592653589793238462643383279;
-    //   //Determines the direction the bot will travel in.
-    //   directionType backDir = dirRight ? directionType::fwd : directionType::rev;
-    //   directionType frontDir = dirRight ? directionType::rev : directionType::fwd;
-
-    //   //Turns the bot using the specified parameters and calculations done above.
-    //   backLeft.rotateFor(backDir, degrees, rotationUnits::deg, false);
-    //   backRight.rotateFor(backDir, degrees, rotationUnits::deg, false);
-    //   frontLeft.rotateFor(frontDir, degrees, rotationUnits::deg, false);
-    //   frontRight.rotateFor(frontDir, degrees, rotationUnits::deg, true);
-    // }
     static void turn(double velocity, double degrees, bool dirRight){
       sensor.setHeading(0,rotationUnits::deg);
       backLeft.setVelocity(velocity, velocityUnits::pct);
@@ -320,28 +327,53 @@ class rLib { //This is a library of methods that the robot can perform. The meth
     static double getDistanceTravelled(){
       return ((backLeft.rotation(rotationUnits::rev) + backRight.rotation(rotationUnits::rev) + frontLeft.rotation(rotationUnits::rev) + frontRight.rotation(rotationUnits::rev))/4) * M_PI * 4;
     }
-    static void pidDrive(double distance){
+    static void pidDrive(double distance, double maxSpeed){
       double KP = 75.85;
-      double KI = 0;
+      // double KI = 0;
       double KD = 0;
       double P = 0;
-      double I = 0;
+      // double I = 0;
       double D = 0;
-      double previousIntegral = 0;
+      double KPDrift = 75.85;
+      // double KI = 0;
+      double KDDrift = 0;
+      double PDrift = 0;
+      // double I = 0;
+      double DDrift = 0;
+      // double previousIntegral = 0;
       int iterationTime = 1;
       double previousError = 0;
       double error = distance;
+      double previousGyroError = 0;
+      double gyroError = 0;
       double distanceTravelled = 0;
       double output = 0;
+      double gyroOutput = 0;
       while(error != 0){
         distanceTravelled = getDistanceTravelled();
         error = distance - distanceTravelled;
+        gyroError = 0 - sensor.rotation();
         P = error;
-        I = previousIntegral + error * iterationTime;
+        PDrift = gyroError;
+        DDrift = (gyroError - previousGyroError)/iterationTime;
+        // I = previousIntegral + error * iterationTime;
         D = (error - previousError)/iterationTime;
-        output = P * KP + I * KI + D * KD;
+        output = P * KP + D * KD;
+        gyroOutput = PDrift * KPDrift + DDrift * KDDrift;
         previousError = error;
-        previousIntegral = I;
+        
+        // previousIntegral = I;
+        if(gyroError < 0){
+          backLeft.setVelocity(gyroOutput,vex::velocityUnits::pct);
+          backRight.setVelocity(gyroOutput,vex::velocityUnits::pct);
+          frontLeft.setVelocity(100 - gyroOutput,vex::velocityUnits::pct);
+          frontRight.setVelocity(100 - gyroOutput,vex::velocityUnits::pct);
+        }else if(gyroError > 0){
+          frontLeft.setVelocity(gyroOutput,vex::velocityUnits::pct);
+          frontRight.setVelocity(gyroOutput,vex::velocityUnits::pct);
+          backLeft.setVelocity(maxSpeed - gyroOutput,vex::velocityUnits::pct);
+          backRight.setVelocity(maxSpeed - gyroOutput,vex::velocityUnits::pct);
+        }
         backLeft.setVelocity(output,vex::velocityUnits::pct);
         backRight.setVelocity(output,vex::velocityUnits::pct);
         frontLeft.setVelocity(output,vex::velocityUnits::pct);
@@ -351,6 +383,78 @@ class rLib { //This is a library of methods that the robot can perform. The meth
       }
     }
 };
+//All robot controls
+class Robot{
+  private:
+    double positionX = 0, positionY = 0, angleFacing = 0;
+    RMotor backLeftR = backLeft;
+    RMotor backRightR = backRight;
+    RMotor frontLeftR = frontLeft;
+    RMotor frontRightR = frontRight;
+    bool intakeSpinning = false;
+    bool intakeDir = false; //false is intake, true is outtake.
+    
+
+  public:
+    void stateIntake(bool intakeSpinning, bool intakeDir){
+      this->intakeSpinning = intakeSpinning;
+      this->intakeDir = intakeDir;
+      if(!intakeSpinning){
+        rLib::stopIntake();
+      }
+      else{
+        if(intakeDir)
+        {
+          rLib::startIntake();
+        }
+        else{
+          rLib::startOuttake();
+        }
+      }
+    }
+    void moveTo(double x, double y, double velocity){
+      double xDistance = x - positionX;
+      double yDistance = y - positionY;
+      double turnAngle = atan(xDistance/yDistance);
+      double distanceNeeded = sqrt(xDistance * xDistance + yDistance * yDistance);
+      bool turnDir = xDistance > 0 ? true : false;
+      rLib::turn(velocity,turnAngle,turnDir);
+      rLib::pidDrive(distanceNeeded, velocity);
+      positionX = x;
+      positionY = y;
+      angleFacing = sensor.rotation();
+    }
+};
+
+Robot s = Robot();
+class Button{
+  private:
+    double x1,y1,x2,y2;
+    bool isPressed;
+    using f_int_t = void(*)(Button b);
+  public:
+    Button(double x1,double x2,double y1,double y2){
+      this->x1 = x1;
+      this->x2 = x2;
+      this->y1 = y1;
+      this->y2 = y2;
+    }
+    void buttonPressed(void(*callback)(Button b)){
+      
+    }
+};
+class Field{
+  static void constructField(){
+    drawBoundaries();
+  }
+  static void drawBoundaries(){
+    Brain.Screen.drawLine(0,0,144,0);
+    Brain.Screen.drawLine(144,0,144,144);
+    Brain.Screen.drawLine(144,144,0,144);
+    Brain.Screen.drawLine(0,144,0,0);
+  }
+};
+
  
 /*---------------------------------------------------------------------------*/
 /*                          Pre-Autonomous Functions                         */
@@ -554,8 +658,11 @@ void autonomous(void) {
     // rLib::toggleSensitive();
 
   }
-  else if(auton == pid){
-    rLib::pidDrive(10);
+  else if(auton == pid){ //also for testing position tracking.
+    rLib::deployBot();
+    s.stateIntake(true,true); //intake is running
+    rLib::pidDrive(10,70);
+    s.moveTo(62,0,70); //x, y, maxVelocity.
   }
 }
 /*---------------------------------------------------------------------------*/
