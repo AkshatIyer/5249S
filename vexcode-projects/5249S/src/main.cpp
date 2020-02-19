@@ -1,5 +1,6 @@
 #include "vex.h"
 #include "math.h"
+#include <vector>
 using namespace vex;
 
 // ---- START VEXCODE CONFIGURED DEVICES ----
@@ -424,6 +425,15 @@ class Robot{
       positionY = y;
       angleFacing = sensor.rotation();
     }
+    void displayRobot(int x, int y){
+      Brain.Screen.drawCircle(x,y,5,ClrGray);
+    }
+    void setX(double x){
+      positionX = x;
+    }
+    void setY(double y){
+      positionY = y;
+    }
 };
 Robot s = Robot();
 class Button{
@@ -442,27 +452,89 @@ class Button{
     }
 };
 static int x = 26, y = 25;
+static int robotX = 0, robotY = 0;
+static int markerX = 0, markerY = 0;
+std::vector<Robot> point;
 double multiplier = 0.01;
+double proportionFactor = 272/144;
+bool allowed = true;
 class Field{
   public:
     static void constructField(){
-      Brain.Screen.drawImageFromFile("field.bmp", 0, 0);
+      // Brain.Screen.drawImageFromFile("field.bmp", 0, 0);
+      Brain.Screen.drawLine(0,0,272,0);
+      Brain.Screen.drawLine(272,0,272,272);
+      Brain.Screen.drawLine(272,272,0,272);
+      Brain.Screen.drawLine(0,272,0,0);
+      Brain.Screen.drawRectangle(0,0,272,272,ClrGreen);
+      displayRobotMarker(markerX,markerY);
+      s.displayRobot(robotX,robotY);
     }
+    // static void changeX(){
+    //   x+=Controller.Axis4.value() * multiplier;
+    //   if(x < 272 && x > 0){
+    //     constructField();
+    //     Brain.Screen.drawCircle(x, y, 5, ClrRed);
+    //     Brain.Screen.drawCircle(x,y,5,ClrGray);
+        
+    //     if(markerX != 0 && markerY != 0){
+    //       displayRobotMarker(markerX,markerY);
+    //     }
+    //     s.displayRobot(robotX,robotY);
+    //   }
+    //   else{
+    //     x-=Controller.Axis3.value() * multiplier;
+    //   }
+    // }
     static void changeX(){
       x+=Controller.Axis4.value() * multiplier;
-      if(x < 223 && x > 25){
-        Brain.Screen.drawImageFromFile("field.bmp",0,0);
-        Brain.Screen.drawCircle(x, y, 5, ClrRed);
+      if(x < 272 && x > 0){
+        constructField();
+        Brain.Screen.drawCircle(x,y,5,ClrWhite);
       }
       else{
         x-=Controller.Axis3.value() * multiplier;
       }
     }
+    static void bigBrain(){
+      while(true)
+      {
+        if(Controller.ButtonB.pressing()){
+            placeRobot(x,y);
+          }
+          else if(Controller.ButtonX.pressing()){
+            createRobotMarker();
+            displayRobotMarker(markerX,markerY);
+          }
+          else if(Controller.ButtonY.pressing()){
+            confirmRobotMove();
+            break;
+          }
+          else if(Controller.ButtonA.pressing()){
+            printPixel();
+          }
+      }
+    }
+    // static void changeY(){
+    //   y-=Controller.Axis3.value() * multiplier;
+    //   if(y < 272 && y > 0){
+    //     constructField();
+    //     Brain.Screen.drawCircle(x, y, 5, ClrRed);
+        
+    //     if(markerX != 0 && markerY != 0){
+    //       displayRobotMarker(markerX,markerY);
+    //     }
+    //     s.displayRobot(robotX,robotY);
+    //   }
+    //   else{
+    //     y+=Controller.Axis3.value() * multiplier;
+    //   }
+    // }
     static void changeY(){
       y-=Controller.Axis3.value() * multiplier;
-      if(y < 221 && y > 24){
-        Brain.Screen.drawImageFromFile("field.bmp",0,0);
-        Brain.Screen.drawCircle(x, y, 5, ClrRed);
+      if(y < 272 && y > 0){
+        constructField();
+        Brain.Screen.drawCircle(x,y,5,ClrWhite);
       }
       else{
         y+=Controller.Axis3.value() * multiplier;
@@ -470,6 +542,32 @@ class Field{
     }
     static void printPixel(){
       Brain.Screen.printAt(400,40,"%d, %d",x,y);
+    }
+    static void placeRobot(int x, int y){
+      robotX = x;
+      robotY = y;
+      s.setX(x/proportionFactor);
+      s.setY(y/proportionFactor);
+      s.displayRobot(robotX,robotY);
+    }
+    static void createRobotMarker(){
+      markerX = x;
+      markerY = y;
+    }
+    static void displayRobotMarker(int x, int y){
+      Brain.Screen.drawCircle(x,y,5,ClrBlue);
+      
+    }
+    static void confirmRobotMove(){
+      double x = (markerX - robotX)/proportionFactor;
+      double y = (markerY - robotY)/proportionFactor;
+      moveRobotTo(x,y,70);
+    }
+    static void moveRobotTo(double x, double y, double velocity){
+      s.moveTo(x,y,velocity);
+      robotX = markerX;
+      robotY = markerY;
+      s.displayRobot(robotX,robotY);
     }
     //25,24 TOPLEFT
     //223,24 TOPRIGHT
@@ -686,9 +784,10 @@ void autonomous(void) {
     // rLib::pidDrive(10,70);
     // s.moveTo(62,0,70); //x, y, maxVelocity.
     Field::constructField();
+    
     Controller.Axis4.changed(Field::changeX);
     Controller.Axis3.changed(Field::changeY);
-    Controller.ButtonA.pressed(Field::printPixel);
+    Field::bigBrain();
   }
 }
 /*---------------------------------------------------------------------------*/
