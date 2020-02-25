@@ -469,6 +469,10 @@ class Field{
       Brain.Screen.drawRectangle(0,0,272,272,ClrGreen);
       displayRobotMarker(markerX,markerY);
       s.displayRobot(robotX,robotY);
+      Brain.Screen.printAt(400,50,"A = Print Point Location");
+      Brain.Screen.printAt(400,60,"B = Place Robot Marker");
+      Brain.Screen.printAt(400,70,"X = Place Location Marker");
+      Brain.Screen.printAt(400,80,"Y = Confirm Movement");
     }
     // static void changeX(){
     //   x+=Controller.Axis4.value() * multiplier;
