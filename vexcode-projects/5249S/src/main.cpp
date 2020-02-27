@@ -61,7 +61,12 @@ enum Auton {
   reliableSkills,
   pid
 };
+enum towerSize {
+  allianceTower,
+  middleTower
+};
 Auton auton = pid;
+towerSize tower;
 class rLib { //This is a library of methods that the robot can perform. The methods listed here are used throughout the robot's autonomous and driver functions.
   public:
   
@@ -142,6 +147,15 @@ class rLib { //This is a library of methods that the robot can perform. The meth
       // startOuttake();
       // drive(25,directionType::rev,10);
       // stopIntake();
+    }
+    static void alignArms(towerSize t){
+      if(t == middleTower)
+      {
+        raiseArms(1000);
+      }else if(t == allianceTower)
+      {
+        raiseArms(800);
+      }
     }
     static void macroStack(){
       // toggleSensitive();
