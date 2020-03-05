@@ -38,8 +38,8 @@ RMotor backLeft = RMotor(PORT11);
 RMotor backRight = RMotor(PORT1);
 RMotor frontLeft = RMotor(PORT20, true);
 RMotor frontRight = RMotor(PORT10, true);
-motor liftMotor = motor(PORT7);
-motor rampMotor = motor(PORT4);
+motor liftMotor = motor(PORT7,true);
+motor rampMotor = motor(PORT19, true);
 motor intakeLMotor = motor(PORT3, true);
 motor intakeRMotor = motor(PORT5);
 inertial sensor = inertial(PORT6);
@@ -311,9 +311,9 @@ class rLib { //This is a library of methods that the robot can perform. The meth
     }
     //Rotates the Lift Down.
     static void startLiftDown() {
-      if(liftMotor.rotation(rotationUnits::deg) > 0) { //bottom limit
+      // if(liftMotor.rotation(rotationUnits::deg) > 0) { //bottom limit
         liftMotor.spin(directionType::rev, 100*sensitivity, percentUnits::pct);
-      }
+      // }
     }
     //Pushes the ramp to a 90 degree angle to the ground.
     static void startRampUp() {
@@ -834,11 +834,10 @@ void usercontrol(void) {
 // Main will set up the competition functions and callbacks.
 //
 int main() {
-  // pre_auton();
-  autonomous();
+  pre_auton();
   // //Set up callbacks for autonomous and driver control periods.
-  // Competition.autonomous( autonomous );
-  // Competition.drivercontrol( usercontrol );
+  Competition.autonomous( autonomous );
+  Competition.drivercontrol( usercontrol );
 
   //Set up controller callbacks.
   Controller.ButtonL1.pressed(rLib::startIntake);
