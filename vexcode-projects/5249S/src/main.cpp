@@ -283,6 +283,12 @@ class rLib { //This is a library of methods that the robot can perform. The meth
       frontLeft.stop(brakeType::coast);
       frontRight.stop(brakeType::coast);
     }
+    static void resetEncoders(){
+      backLeft.resetRotation();
+      backRight.resetRotation();
+      frontLeft.resetRotation();
+      frontRight.resetRotation();
+    }
     //Stops the intake motors in its place.
     static void stopIntake() {
       intakeLMotor.stop(brakeType::hold);
@@ -415,6 +421,7 @@ class rLib { //This is a library of methods that the robot can perform. The meth
         task::sleep(iterationTime);
       }
       stopDrive();
+      resetEncoders();
       Controller.Screen.print("Finished");
     }
     static void pidTurn(double degrees, int maxSpeed, bool dirRight){
